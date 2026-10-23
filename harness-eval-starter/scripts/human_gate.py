@@ -12,7 +12,7 @@ from pathlib import Path
 
 from golden_lib import (
     case_hash, case_state, load_decisions, load_golden, load_intents, load_runs,
-    require_yaml,
+    in_run_scope, require_yaml,
 )
 
 
@@ -152,8 +152,6 @@ def _run(root: Path, value: str, cases: dict, decisions: list[dict]):
         ids = scope_text.split(",")
         if len(ids) != len(set(ids)) or any(gs_id not in cases for gs_id in ids):
             raise GateError("없는 사례 또는 중복 GS ID입니다")
-        if any(case_state(gs_id, case_hash(cases[gs_id], root), decisions) == "RETIRED" for gs_id in ids):
-            raise GateError("RETIRED 사례는 실행 결정 불가")
         scope = {"cases": ids}
     elif scope_text == "CORE":
         scope = {"priority": "CORE"}
@@ -163,6 +161,23 @@ def _run(root: Path, value: str, cases: dict, decisions: list[dict]):
         if scope_text not in targets:
             raise GateError("없는 하네스 범위입니다: " + SCOPE_HELP)
         scope = {"target": scope_text}
+    intents = load_intents(root / "eval" / "intent.md")
+    states = {}
+    for gs_id, case in cases.items():
+        intent_id = case["intent_id"]
+        if intent_id not in intents:
+            raise GateError(f"{gs_id}: 없는 Intent {intent_id}")
+        if in_run_scope(case, intents[intent_id], scope):
+            states[gs_id] = case_state(gs_id, case_hash(case, root), decisions)
+    retry = "승인 뒤 실행 <범위> 를 다시 입력하세요"
+    if "cases" in scope:
+        rejected = [f"{gs_id} {state}" for gs_id, state in states.items() if state != "APPROVED"]
+        if rejected:
+            raise GateError(" · ".join(rejected) + "; " + retry)
+    elif "APPROVED" not in states.values():
+        counts = {state: list(states.values()).count(state) for state in sorted(set(states.values()))}
+        detail = " · ".join(f"{state}={count}" for state, count in counts.items())
+        raise GateError(f"범위에 승인된 사례가 없습니다; {detail}; {retry}")
     return {"verb": "RUN", "scope": scope, "value": {"runs": runs, "ablate": ablate}}
 
 

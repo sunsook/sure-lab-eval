@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from golden_lib import (FixtureMissing, SchemaError, YamlMissing, case_hash, case_state,
-                        load_decisions, load_golden, load_intents, load_runs)
+                        in_run_scope, load_decisions, load_golden, load_intents, load_runs)
 from validate_golden import _schema, validate
 
 
@@ -317,16 +317,6 @@ def attribution(with_verdict: str, ablated_verdict: str) -> tuple[str | None, st
     return None, f"기여 계산 불가: WITH={with_verdict}, ABLATED={ablated_verdict}"
 
 
-def _selected(case: dict, intent: dict, scope: dict) -> bool:
-    if "cases" in scope:
-        return case["id"] in scope["cases"]
-    if "target" in scope:
-        return scope["target"] in intent.get("target", [])
-    if scope == {"priority": "CORE"}:
-        return intent.get("priority") == "CORE"
-    raise ValueError("RUN 범위가 필요합니다: cases / target / priority CORE")
-
-
 def _verdict(attempts: list[dict]) -> str:
     quorum = len(attempts) // 2 + 1
     valid = sum(item["verdict"] in ("PASS", "FAIL", "REVIEW") for item in attempts)
@@ -371,18 +361,26 @@ def main() -> int:
                 _say(error)
             return 1
         chosen, excluded = [], {}
+        decisions_before_request = [row for row in decisions if row["seq"] < request["seq"]]
+        approved_after_request = 0
         for case in golden["cases"]:
             intent = intents[case["intent_id"]]
-            if not _selected(case, intent, scope):
+            if not in_run_scope(case, intent, scope):
                 continue
             digest = case_hash(case, root)
             state = case_state(case["id"], digest, decisions)
+            if state == "APPROVED":
+                state = case_state(case["id"], digest, decisions_before_request)
+                if state != "APPROVED":
+                    approved_after_request += 1
             if state == "APPROVED":
                 chosen.append((case, intent, digest))
             else:
                 excluded[state] = excluded.get(state, 0) + 1
         for state, count in sorted(excluded.items()):
             _say(f"제외 {state}={count}")
+        if approved_after_request:
+            _say(f"요청 뒤에 승인된 사례 {approved_after_request}건은 이 요청으로 돌지 않는다 — 승인 뒤 실행 <범위> 를 다시 입력해야 돈다")
         value = request.get("value") or {}
         runs, ablate = value.get("runs", 1), value.get("ablate", False)
         if not isinstance(runs, int) or runs < 1 or not isinstance(ablate, bool):
@@ -392,6 +390,8 @@ def main() -> int:
         if args.dry_run:
             _say(f"예상 claude 호출 수: {calls}; LLM_JUDGE 1건 1회 2호출 ≈ 1~2분")
             return 0
+        if not chosen:
+            return 1
         started = datetime.now(timezone.utc)
         run_base = "R-" + started.strftime("%Y%m%d-%H%M%S")
         run_dir = eval_dir / "runs" / run_base

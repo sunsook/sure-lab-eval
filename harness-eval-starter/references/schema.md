@@ -92,14 +92,14 @@ script_criteria_keys: [exit_code, stdout_contains, stderr_contains]
 | 사람 프롬프트의 머리 | `verb` | 효과 |
 |---|---|---|
 | `승인 모두` · `승인 1,2,4` · `승인 GS-009[,GS-010…]` | `APPROVE` | 직전 assistant의 승인 요청 블록 안에서만 지문과 현재 해시를 대조해 승인한다. 한 건이라도 불일치하면 전체 거부. |
-| `실행 GS-005[,GS-007]` · `실행 <하네스 경로>` · `실행 CORE` [`3회`] [`ablate`] | `RUN` | 범위·횟수·ablate를 기록한다. 실행기는 `--request <seq>`만 받는다. |
+| `실행 GS-005[,GS-007]` · `실행 <하네스 경로>` · `실행 CORE` [`3회`] [`ablate`] | `RUN` | 범위에 승인된(APPROVED) 사례가 있어야 기록한다 — GS ID 지정은 전부 APPROVED. 범위·횟수·ablate를 기록한다. 실행기는 `--request <seq>`만 받고 그 요청보다 먼저 승인된 사례만 돌린다. 승인 전 「실행」은 무효라 승인 뒤 다시 입력한다. |
 | `동의 GS-005` | `AGREE` | 최신 run의 판정을 확인한다. |
 | `비동의 GS-005` | `DISAGREE` | 최신 run의 PASS/FAIL을 뒤집는다. |
 | `판정 GS-005 PASS\|FAIL` | `VERDICT` | REVIEW에 사람 판정을 준다. |
 | `골든셋오류 GS-005 NOT_HARNESS\|OFF_INTENT\|UNJUDGEABLE [사유]` | `GS_ERROR` | REDESIGN 대상으로 만든다. |
 | `폐기 GS-005` | `RETIRE` | 영구 RETIRED 대상으로 만든다. |
 
-승인 요청 블록은 `[승인 요청 B-xxx]` 머리 줄과 `<번호>. GS-xxx · 지문 <canonical_hash 앞 8자> — <core_intent>` 형식의 사례 줄 최대 4줄이다. 요청 블록을 보이지 않았거나 지문이 바뀌었으면 승인할 수 없다. `APPROVAL_MISSING`, `APPROVAL_STALE`, `REDESIGN`, `RETIRED`, `APPROVED`는 결정 대장과 현재 해시로 계산하며 사례 파일에 쓰지 않는다. `RUN` 소진도 대장에 기록하지 않는다. `results.json` 중 같은 `request_seq`가 있으면 소진된 것이다. 사람 확인은 해당 사례의 최신 `run_id`에만 적용하고 새 run으로 이월하지 않는다.
+승인 요청 블록은 `[승인 요청 B-xxx]` 머리 줄과 `<번호>. GS-xxx · 지문 <canonical_hash 앞 8자> — <core_intent>` 형식의 사례 줄 최대 4줄이다. 요청 블록을 보이지 않았거나 지문이 바뀌었으면 승인할 수 없다. `APPROVAL_MISSING`, `APPROVAL_STALE`, `REDESIGN`, `RETIRED`, `APPROVED`는 결정 대장과 현재 해시로 계산하며 사례 파일에 쓰지 않는다. `RUN` 소진도 대장에 기록하지 않는다. `results.json` 중 같은 `request_seq`가 있으면 소진된 것이다. 사람 확인은 해당 사례의 최신 `run_id`에만 적용하고 새 run으로 이월하지 않는다. 골든셋오류 · 폐기는 사례 상태(REDESIGN · RETIRED)를 바꾸므로, 집계는 실행 당시 승인(요청 seq 이전)과 별도로 집계 시점 상태를 보고 그 사례를 제외한다.
 
 ## 실행 결과: `eval/runs/<run_id>/results.json`
 

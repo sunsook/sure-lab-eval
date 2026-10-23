@@ -140,6 +140,16 @@ def case_hash(case: dict, root) -> str:
     return canonical_hash(case, fixture_bytes)
 
 
+def in_run_scope(case: dict, intent: dict, scope: dict) -> bool:
+    if "cases" in scope:
+        return case["id"] in scope["cases"]
+    if "target" in scope:
+        return scope["target"] in intent.get("target", [])
+    if scope == {"priority": "CORE"}:
+        return intent.get("priority") == "CORE"
+    raise ValueError("RUN 범위가 필요합니다: cases / target / priority CORE")
+
+
 def case_state(case_id: str, current_hash: str, decisions: list[dict]) -> str:
     relevant = sorted((row for row in decisions if row.get("gs_id") == case_id), key=lambda row: row["seq"])
     if any(row.get("verb") == "RETIRE" for row in relevant):

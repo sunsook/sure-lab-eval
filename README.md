@@ -24,4 +24,4 @@
 
 ## 출처
 
-`sun_harness_eval` 커밋 `94ed61c` 의 `skill/harness-eval-starter/` 를 그대로 옮겼다.
+`sun_harness_eval` 커밋 `02c9b47` 의 `skill/harness-eval-starter/` 를 그대로 옮겼다.

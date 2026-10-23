@@ -104,13 +104,14 @@ def summarize(root: Path, selected_run: str | None = None) -> list[str]:
         if case is None:
             raise ValueError(f"골든셋에 없는 결과: {gs_id}")
         digest = case_hash(case, root)
-        state = case_state(gs_id, digest, [d for d in decisions if d["seq"] < run["request_seq"]])
+        state_at_request = case_state(gs_id, digest, [d for d in decisions if d["seq"] < run["request_seq"]])
         if row["content_sha256"] != digest:
             excluded["STALE"] += 1
             continue
         if not _approval_at_run(gs_id, digest, run["request_seq"], decisions):
-            excluded["APPROVAL_MISSING" if state == "APPROVAL_MISSING" else "STALE"] += 1
+            excluded["APPROVAL_MISSING" if state_at_request == "APPROVAL_MISSING" else "STALE"] += 1
             continue
+        state = case_state(gs_id, digest, decisions)
         if state != "APPROVED":
             excluded["STALE" if state == "APPROVAL_STALE" else state] += 1
             continue
