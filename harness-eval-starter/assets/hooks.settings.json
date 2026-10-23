@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/.claude/skills/harness-eval-starter/scripts/human_gate.py\"", "timeout": 30}]}],
+    "PreToolUse": [{"matcher": "Edit|Write|NotebookEdit|Bash|PowerShell", "hooks": [{"type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/.claude/skills/harness-eval-starter/scripts/guard.py\"", "timeout": 10}]}]
+  }
+}

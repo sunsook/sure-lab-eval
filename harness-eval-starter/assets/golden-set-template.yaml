@@ -1,0 +1,17 @@
+schema_version: 1
+# 한 배치 최대 4건, 누적은 무제한. 필드는 references/schema.md 참조. 아래 사례는 DRAFT 작성 예시이며 승인 상태는 사람 결정 대장에서 계산한다.
+cases:
+  - id: GS-001
+    intent_id: INT-001
+    batch_id: B-001
+    core_intent: "리뷰 지적에는 파일:줄 근거를 단다"
+    failure_situation: "근거 위치가 없는 리뷰 지적을 작성한다"
+    input:
+      prompt: "변경 사항을 리뷰하고 지적할 사항을 적어줘"
+      fixture: "fixtures/gs-001.patch"
+    expected_behavior: "모든 지적에 파일:줄 근거를 덧붙인다"
+    observable_evidence: "리뷰 출력의 각 지적에 파일 경로와 줄 번호가 있다"
+    method: LLM_JUDGE
+    judgement_criteria: "각 지적의 파일:줄 근거를 실행 출력에서 확인한다"
+    rule_source: ".claude/rules/review.md:1"
+    rule_text: "리뷰 지적에는 파일:줄 근거를 단다"

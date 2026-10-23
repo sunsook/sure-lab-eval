@@ -1,0 +1,25 @@
+{
+  "run_id": "R-20261021-120000",
+  "request_seq": 1,
+  "harness_sha": "example-harness-sha256",
+  "started_at": "2026-10-21T12:00:00+09:00",
+  "cases": [
+    {
+      "id": "GS-001",
+      "method": "LLM_JUDGE",
+      "condition": "WITH",
+      "content_sha256": "example-case-sha256",
+      "attempts": [
+        {
+          "verdict": "PASS",
+          "evidence_quote": "src/review.py:42",
+          "quote_found": true,
+          "exit_code": 0,
+          "output_path": "GS-001-WITH-1.txt"
+        }
+      ],
+      "verdict": "PASS",
+      "attribution": null
+    }
+  ]
+}
